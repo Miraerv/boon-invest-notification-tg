@@ -56,7 +56,7 @@ def redis_listener(application: Application, loop: asyncio.AbstractEventLoop):
                 
                 # Создаем текст уведомления
                 text = (
-                    f"🎉 Новый пользователь зарегистрирован!\n\n"
+                    f"Новый пользователь зарегистрирован!\n\n"
                     f"Имя: {user_data.get('name', 'N/A')}\n"
                     f"Фамилия: {user_data.get('surname', 'N/A')}\n"
                     f"Телефон: {user_data.get('phone', 'N/A')}\n"
