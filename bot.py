@@ -102,8 +102,6 @@ def create_application_notification(application_data: dict) -> str:
     name = application_data.get('name', 'N/A')
     phone = application_data.get('phone', 'N/A')
     amount = application_data.get('amount', 'N/A')
-    note = application_data.get('note', 'Не указано')
-    status = application_data.get('status', 'new')
 
     # Создаем WhatsApp ссылку
     clean_phone = ''.join(filter(str.isdigit, str(phone)))  # Убираем все нецифровые символы
@@ -115,8 +113,6 @@ def create_application_notification(application_data: dict) -> str:
         f"👤 Имя: {name}\n"
         f"📞 Телефон: {phone}\n"
         f"💰 Сумма: {amount} руб.\n"
-        f"📝 Примечание: {note}\n"
-        f"📊 Статус: {status}\n\n"
         f"💬 [Написать в WhatsApp]({whatsapp_url})"
     )
 
