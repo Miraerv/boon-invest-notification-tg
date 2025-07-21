@@ -107,7 +107,7 @@ def create_application_notification(application_data: dict) -> str:
 
     # Создаем WhatsApp ссылку
     clean_phone = ''.join(filter(str.isdigit, str(phone)))  # Убираем все нецифровые символы
-    message = f"{name}, приветствую"
+    message = f"{name}, приветствую!"
     whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={message}"
 
     return (
