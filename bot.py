@@ -78,18 +78,29 @@ def redis_listener(application: Application, loop: asyncio.AbstractEventLoop):
 
 def create_registration_notification(user_data: dict) -> str:
     """Создает текст уведомления о регистрации пользователя"""
+    name = user_data.get('name', 'N/A')
+    surname = user_data.get('surname', 'N/A')
+    phone = user_data.get('phone', 'N/A')
+    email = user_data.get('email', 'N/A')
+
+    # Создаем WhatsApp ссылку
+    clean_phone = ''.join(filter(str.isdigit, str(phone)))  # Убираем все нецифровые символы
+    message = f"{name}, приветствую"
+    whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={message}"
+
     return (
         f"🆕 Новый пользователь зарегистрирован!\n\n"
-        f"👤 Имя: {user_data.get('name', 'N/A')}\n"
-        f"👤 Фамилия: {user_data.get('surname', 'N/A')}\n"
-        f"📞 Телефон: {user_data.get('phone', 'N/A')}\n"
-        f"📧 Email: {user_data.get('email', 'N/A')}"
+        f"👤 Имя: {name}\n"
+        f"👤 Фамилия: {surname}\n"
+        f"📞 Телефон: {phone}\n"
+        f"📧 Email: {email}\n\n"
+        f"💬 [Написать в WhatsApp]({whatsapp_url})"
     )
 
 def create_application_notification(application_data: dict) -> str:
     """Создает текст уведомления о новой заявке"""
     return (
-        f"📋 Новая заявка!\n\n"
+        f"📋 Новая заявка на займ!\n\n"
         f"👤 Имя: {application_data.get('name', 'N/A')}\n"
         f"📞 Телефон: {application_data.get('phone', 'N/A')}\n"
         f"💰 Сумма: {application_data.get('amount', 'N/A')} руб.\n"
@@ -102,7 +113,12 @@ async def send_notification(application: Application, text: str):
         logger.warning("Список ADMIN_CHAT_IDS пуст. Уведомление не отправлено.")
         return
 
-    tasks = [application.bot.send_message(chat_id=chat_id, text=text) for chat_id in ADMIN_CHAT_IDS]
+    tasks = [application.bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        parse_mode='Markdown',
+        disable_web_page_preview=True
+    ) for chat_id in ADMIN_CHAT_IDS]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
