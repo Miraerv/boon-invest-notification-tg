@@ -99,13 +99,25 @@ def create_registration_notification(user_data: dict) -> str:
 
 def create_application_notification(application_data: dict) -> str:
     """Создает текст уведомления о новой заявке"""
+    name = application_data.get('name', 'N/A')
+    phone = application_data.get('phone', 'N/A')
+    amount = application_data.get('amount', 'N/A')
+    note = application_data.get('note', 'Не указано')
+    status = application_data.get('status', 'new')
+
+    # Создаем WhatsApp ссылку
+    clean_phone = ''.join(filter(str.isdigit, str(phone)))  # Убираем все нецифровые символы
+    message = f"{name}, приветствую"
+    whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={message}"
+
     return (
-        f"📋 Новая заявка на займ!\n\n"
-        f"👤 Имя: {application_data.get('name', 'N/A')}\n"
-        f"📞 Телефон: {application_data.get('phone', 'N/A')}\n"
-        f"💰 Сумма: {application_data.get('amount', 'N/A')} руб.\n"
-        f"📝 Примечание: {application_data.get('note', 'Не указано')}\n"
-        f"📊 Статус: {application_data.get('status', 'new')}"
+        f"📋 Новая заявка!\n\n"
+        f"👤 Имя: {name}\n"
+        f"📞 Телефон: {phone}\n"
+        f"💰 Сумма: {amount} руб.\n"
+        f"📝 Примечание: {note}\n"
+        f"📊 Статус: {status}\n\n"
+        f"💬 [Написать в WhatsApp]({whatsapp_url})"
     )
 
 async def send_notification(application: Application, text: str):
