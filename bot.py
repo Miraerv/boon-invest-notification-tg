@@ -89,7 +89,7 @@ def create_registration_notification(user_data: dict) -> str:
 def create_application_notification(application_data: dict) -> str:
     """Создает текст уведомления о новой заявке"""
     return (
-        f"📋 Новая заявка на займ!\n\n"
+        f"📋 Новая заявка!\n\n"
         f"👤 Имя: {application_data.get('name', 'N/A')}\n"
         f"📞 Телефон: {application_data.get('phone', 'N/A')}\n"
         f"💰 Сумма: {application_data.get('amount', 'N/A')} руб.\n"
