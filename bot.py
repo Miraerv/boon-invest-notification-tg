@@ -17,7 +17,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 REDIS_HOST = os.getenv("REDIS_HOST", 'localhost')
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_CHANNEL = 'user_registered'
+REDIS_CHANNEL_REGISTRATION = 'user_registered'
+REDIS_CHANNEL_APPLICATION = 'application'  # Новый канал для заявок
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -42,8 +43,9 @@ def redis_listener(application: Application, loop: asyncio.AbstractEventLoop):
     try:
         r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
         pubsub = r.pubsub()
-        pubsub.subscribe(REDIS_CHANNEL)
-        logger.info(f"Подписан на канал Redis: {REDIS_CHANNEL} на {REDIS_HOST}:{REDIS_PORT}")
+        # Подписываемся на оба канала
+        pubsub.subscribe(REDIS_CHANNEL_REGISTRATION, REDIS_CHANNEL_APPLICATION)
+        logger.info(f"Подписан на каналы Redis: {REDIS_CHANNEL_REGISTRATION}, {REDIS_CHANNEL_APPLICATION} на {REDIS_HOST}:{REDIS_PORT}")
     except redis.exceptions.ConnectionError as e:
         logger.error(f"Не удалось подключиться к Redis: {e}")
         return # Завершаем поток, если нет подключения
@@ -51,19 +53,20 @@ def redis_listener(application: Application, loop: asyncio.AbstractEventLoop):
     for message in pubsub.listen():
         if message['type'] == 'message':
             try:
-                logger.info(f"Получено сообщение из Redis: {message['data']}")
-                user_data = json.loads(message['data'])
-                
-                # Создаем текст уведомления
-                text = (
-                    f"Новый пользователь зарегистрирован!\n\n"
-                    f"Имя: {user_data.get('name', 'N/A')}\n"
-                    f"Фамилия: {user_data.get('surname', 'N/A')}\n"
-                    f"Телефон: {user_data.get('phone', 'N/A')}\n"
-                    f"Email: {user_data.get('email', 'N/A')}"
-                )
-                
-                # Безопасно вызываем асинхронную функцию из потока, используя переданный event loop
+                channel = message['channel']
+                logger.info(f"Получено сообщение из Redis канала {channel}: {message['data']}")
+                data = json.loads(message['data'])
+
+                # Обработка сообщений в зависимости от канала
+                if channel == REDIS_CHANNEL_REGISTRATION:
+                    text = create_registration_notification(data)
+                elif channel == REDIS_CHANNEL_APPLICATION:
+                    text = create_application_notification(data)
+                else:
+                    logger.warning(f"Неизвестный канал: {channel}")
+                    continue
+
+                # Безопасно вызываем асинхронную функцию из потока
                 asyncio.run_coroutine_threadsafe(
                     send_notification(application, text), loop
                 )
@@ -73,13 +76,34 @@ def redis_listener(application: Application, loop: asyncio.AbstractEventLoop):
             except Exception as e:
                 logger.error(f"Произошла ошибка в слушателе Redis: {e}")
 
+def create_registration_notification(user_data: dict) -> str:
+    """Создает текст уведомления о регистрации пользователя"""
+    return (
+        f"🆕 Новый пользователь зарегистрирован!\n\n"
+        f"👤 Имя: {user_data.get('name', 'N/A')}\n"
+        f"👤 Фамилия: {user_data.get('surname', 'N/A')}\n"
+        f"📞 Телефон: {user_data.get('phone', 'N/A')}\n"
+        f"📧 Email: {user_data.get('email', 'N/A')}"
+    )
+
+def create_application_notification(application_data: dict) -> str:
+    """Создает текст уведомления о новой заявке"""
+    return (
+        f"📋 Новая заявка на займ!\n\n"
+        f"👤 Имя: {application_data.get('name', 'N/A')}\n"
+        f"📞 Телефон: {application_data.get('phone', 'N/A')}\n"
+        f"💰 Сумма: {application_data.get('amount', 'N/A')} руб.\n"
+        f"📝 Примечание: {application_data.get('note', 'Не указано')}\n"
+        f"📊 Статус: {application_data.get('status', 'new')}"
+    )
+
 async def send_notification(application: Application, text: str):
     if not ADMIN_CHAT_IDS:
         logger.warning("Список ADMIN_CHAT_IDS пуст. Уведомление не отправлено.")
         return
 
     tasks = [application.bot.send_message(chat_id=chat_id, text=text) for chat_id in ADMIN_CHAT_IDS]
-    
+
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     for chat_id, result in zip(ADMIN_CHAT_IDS, results):
@@ -107,12 +131,12 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
 
     loop = asyncio.get_event_loop()
-    
+
     redis_thread = threading.Thread(
         target=redis_listener, args=(application, loop), daemon=True
     )
     redis_thread.start()
-    
+
     logger.info("Бот запущен и готов к работе...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
