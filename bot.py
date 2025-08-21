@@ -18,7 +18,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 REDIS_HOST = os.getenv("REDIS_HOST", 'localhost')
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_CHANNEL_REGISTRATION = 'user_registered'
-REDIS_CHANNEL_APPLICATION = 'application'  # Новый канал для заявок
+REDIS_CHANNEL_APPLICATION = 'application'
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -105,7 +105,15 @@ def create_application_notification(application_data: dict) -> str:
 
     # Создаем WhatsApp ссылку
     clean_phone = ''.join(filter(str.isdigit, str(phone)))  # Убираем все нецифровые символы
-    message = f"{name}, приветствую!"
+    message = f"""От имени основателя Boon Market — Сергея Протопопова
+{name}, приветствую!
+Поздравляю с регистрацией на boontarinvest.ru!
+
+Сергей в соцсетях:
+- в Вк и Инст — @proto.sergey
+- канал в телеграм — @protosergey
+
+В каком регионе Вас интересуют инвестиции?"""
     whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={message}"
 
     return (
