@@ -6,6 +6,7 @@ import redis
 import json
 import asyncio
 import os
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 from telegram import Update
@@ -114,7 +115,8 @@ def create_application_notification(application_data: dict) -> str:
 - канал в телеграм — @protosergey
 
 В каком регионе Вас интересуют инвестиции?"""
-    whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={message}"
+    encoded_message = quote(message)
+    whatsapp_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded_message}"
 
     return (
         f"📋 Новая заявка!\n\n"
